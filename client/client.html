@@ -1,13 +1,130 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <title>Our simple HTTP server</title>
   <link rel="stylesheet" type="text/css" href="/style.css">
-  
-  <script>
 
+  <script>
+    let nameInput;
+    let ageInput;
+    let urlSelect;
+    let methodSelect;
+
+    const handleResponse = (response) => {
+
+      response.text().then(responseText => {
+        const contentType = response.headers.get('Content-Type');
+        const content = document.querySelector('#content');
+        // content.appendChild(document.createElement('hr'));
+
+        const h1 = document.createElement('h1');
+        const p = document.createElement('p');
+
+        switch (response.status) {
+          case 200:
+            h1.innerText = 'Success';
+            p.innerText = responseText;
+            break;
+          case 201:
+            h1.innerText = 'Created';
+            p.innerText = `Message: ${JSON.parse(responseText).message}`;
+            break;
+          case 204:
+            h1.innerText = 'Updated (No Content)';
+            break;
+          case 400:
+            h1.innerText = 'Bad Request';
+            p.innerText = `Message: ${JSON.parse(responseText).message}`;
+            break;
+          case 404:
+            h1.innerText = 'Not Found';
+            if (responseText)
+              p.innerText = `Message: ${JSON.parse(responseText).message}`;
+            break;
+          default:
+            h1.innerText = 'Not Sure';
+            break;
+        }
+
+
+        content.innerHTML = "";
+        content.appendChild(h1);
+        content.appendChild(p);
+
+        if (responseText)
+          console.log(JSON.parse(responseText));
+      });
+    };
+
+    const sendPost = async (url, data) => {
+      const fetchPromise = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: data,
+      });
+
+      handleResponse(fetchPromise);
+    };
+
+    const sendGet = async (url) => {
+      const fetchPromise = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+        },
+      });
+
+      handleResponse(fetchPromise);
+    };
+
+    const sendHead = async (url) => {
+      const fetchPromise = await fetch(url, {
+        method: 'HEAD',
+        headers: {
+          'Accept': 'application/json',
+        },
+      });
+
+      handleResponse(fetchPromise);
+    };
+
+    const init = () => {
+      nameInput = document.getElementById('nameField');
+      ageInput = document.getElementById('ageField');
+      urlSelect = document.getElementById('urlField');
+      methodSelect = document.getElementById('methodSelect');
+
+      let addUserBtn = document.getElementById('add-user-btn');
+      addUserBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+
+        let name = nameInput.value;
+        let age = ageInput.value;
+
+        const postData = JSON.stringify({ name, age });
+        sendPost('/addUser', postData);
+        return false;
+      });
+
+      let getUsersBtn = document.getElementById('get-users-btn');
+      getUsersBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+
+        if (methodSelect.value == 'get')
+          sendGet(urlSelect.value);
+        if (methodSelect.value == 'head')
+          sendHead(urlSelect.value);
+      });
+    }
+
+    window.onload = init;
   </script>
 </head>
+
 <body>
   <section id="top">
     <h3>POST Status Code Tests</h3>
@@ -15,8 +132,8 @@
       <label for="name">Name: </label>
       <input id="nameField" type="text" name="name" />
       <label for="age">Age: </label>
-      <input id="ageField" type="number" name="age" min="0" max="100" step="1"/>
-      <input type="submit" value="Add User" />
+      <input id="ageField" type="number" name="age" min="0" max="100" step="1" />
+      <input id="add-user-btn" type="submit" value="Add User" />
     </form>
     <form id="userForm" action="/getUsers" method="get">
       <select id='urlField'>
@@ -27,10 +144,11 @@
         <option value="get">GET</option>
         <option value="head">HEAD</option>
       </select>
-      <input type="submit" value="Get User" />
+      <input id="get-users-btn" type="submit" value="Get User" />
     </form>
   </section>
   <section id="content">
   </section>
 </body>
+
 </html>
